@@ -14,13 +14,13 @@ parser = argparse.ArgumentParser(description='Reconstruction')
 parser.add_argument('--inputFiles', metavar='input', type=str, nargs = '+', help='input files from 4 channels',required=True)
 args = parser.parse_args()
 
-#---Read the input files
-f1 = h5py.File('Wavenewscope_'+args.inputFiles[0]+'.h5', 'r') #---Channel 1
-f2 = h5py.File('Wavenewscope_'+args.inputFiles[1]+'.h5', 'r') #---Channel 2
-f3 = h5py.File('Wavenewscope_'+args.inputFiles[2]+'.h5', 'r') #---Channel 3
-f4 = h5py.File('Wavenewscope_'+args.inputFiles[3]+'.h5', 'r') #---Channel 4
+##---Read the input files
+f1 = h5py.File('Wavenewscope_CH'+args.inputFiles[0]+'.h5', 'r') #---Channel 1
+f2 = h5py.File('Wavenewscope_CH'+args.inputFiles[1]+'.h5', 'r') #---Channel 2
+f3 = h5py.File('Wavenewscope_CH'+args.inputFiles[2]+'.h5', 'r') #---Channel 3
+f4 = h5py.File('Wavenewscope_CH'+args.inputFiles[3]+'.h5', 'r') #---Channel 4
 
-#---Prepare output file
+##---Prepare output file
 outputFile = 'output.root'
 outRoot = ROOT.TFile(outputFile, "RECREATE")
 outTree = ROOT.TTree("reco","reco")
