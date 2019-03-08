@@ -15,6 +15,6 @@ Vars.append(['amp[3]','CH4_amp',';Channel 4 amplitude; Yields',100,-400,800])
 
 cfdFrac = [5,10,15,20,25,30,35,40,45,50,55,60,65]
 
-colors = [kRed,kBlue,kGreen]
+colors = [kRed,kBlue,kGreen+4]
 markerStyle = [20,21,22]
 senName = ['Pad 1','Pad 2','Pad 3']

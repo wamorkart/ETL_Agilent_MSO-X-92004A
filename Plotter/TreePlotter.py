@@ -39,19 +39,20 @@ for bias in range(len(args.Bias)):
         h.GetYaxis().SetTitleOffset(1.5)
         c = TCanvas('c', 'c', 800, 600)
         h.Draw()
-        c.SaveAs("Bias"+str(args.Bias[bias])+"_"+str(var[1])+".pdf")
+        c.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"_"+str(var[1])+".pdf")
 
         if doLanFit and "amp" in var[0]: ##--Landau fit of amplitude distribution
            fitResultPtr_lan = h.Fit("landau","S")
            chi2_nparams_lan = (fitResultPtr_lan.Chi2(), fitResultPtr_lan.NFreeParameters())
            c.Draw()
-           c.SaveAs("Bias"+str(args.Bias[bias])+"_fitLan_"+str(var[1])+".pdf")
+           c.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"_fitLan_"+str(var[1])+".pdf")
 
     graphs = TMultiGraph()
     leg = TLegend(0.6, 0.7, 0.89, 0.89)
     leg.SetBorderSize(0)
     leg.SetTextSize(0.02)
     leg.SetFillColor(kWhite)
+    leg.SetFillStyle(0)
 
     res_min = []
     res_min_err = []
@@ -67,7 +68,7 @@ for bias in range(len(args.Bias)):
             c1 = TCanvas('c1', 'c1', 800, 600)
             GausFit = h2.Fit("gaus","S")
             chi2_nparams_gaus = (GausFit.Chi2(), GausFit.NFreeParameters())
-            c1.SaveAs("Bias"+str(args.Bias[bias])+"CH"+str(args.Channel[chan])+"_CFD_"+str(f)+".pdf")
+            c1.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"CH"+str(args.Channel[chan])+"_CFD_"+str(f)+".pdf")
             y.append((gaus.GetParameter(2))/1e-12)
             y_err.append((gaus.GetParError(2))/1e-12)
             x_err.append(0)
@@ -94,21 +95,24 @@ for bias in range(len(args.Bias)):
     graphs.Draw("AP same")
     leg.Draw("same")
     DrawCMSLabels(c0, '', 1)
-    c0.SaveAs("Bias"+str(args.Bias[bias])+"_ResVSCFD.pdf")
+    c0.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"_ResVSCFD.pdf")
 
 res_2d_transposed = zip(*res_2d)
 res_2d_err_transposed = zip(*res_2d_err)
+
 graphs2  = TMultiGraph()
 leg2 = TLegend(0.6, 0.7, 0.89, 0.89)
 leg2.SetBorderSize(0)
 leg2.SetTextSize(0.02)
 leg2.SetFillColor(kWhite)
+leg2.SetFillStyle(0)
 
-for i in range(len(res_2d_transposed[0])):
+for i in range(len(args.Channel)):
     c2 = TCanvas("c", "c", 800, 750)
     SetPadStyle(c2)
     c2.SetGridy()
     c2.SetGridx()
+    print list(res_2d_transposed)
     gr2 = TGraphErrors(len(Voltage),array('d',Voltage),array('d',list(res_2d_transposed[i])),array('d',Voltage_err),array('d',list(res_2d_err_transposed[i])))
     gr2.SetMarkerColorAlpha(colors[i],0.8)
     gr2.SetLineColor(colors[i])
@@ -122,4 +126,4 @@ c2.Update()
 graphs2.Draw("AP same")
 leg2.Draw("same")
 DrawCMSLabels(c2, '', 1)
-c2.SaveAs("MinResVsVoltage.pdf")
+c2.SaveAs(outputLoc+"MinResVsVoltage.pdf")
