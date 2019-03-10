@@ -33,6 +33,7 @@ for bias in range(len(args.Bias)):
         tempCut = TCut(Cut)
         if "amp" in var[0]:
             Cut = var[0]+">100"
+            #Cut = "1>0"
         ch.Draw(var[0]+'>>'+hist, TCut(Cut))
         h.SetLineColor(kBlack)
         h.SetLineWidth(2)
@@ -56,19 +57,35 @@ for bias in range(len(args.Bias)):
 
     res_min = []
     res_min_err = []
+    print range(len(args.Channel))
     for chan in range(len(args.Channel)):
         y =[]
         y_err = []
         x = cfdFrac
         x_err = []
+        #print "channel ", str(args.Channel[chan])
         for f in cfdFrac:
             hist2 = "Ch"+str(chan)+"_"+str(f)
-            h2 = TH1F(hist2,"Time Resolution; #Delta T CH"+str(args.Channel[chan])+"_"+str(f)+";Yields" , 100, 5e-09, 6e-09)
-            ch.Draw("LP2_"+str(f)+"["+str(args.Channel[chan])+"]"+"-LP2_50[3]"+'>>'+hist2)
+            h2 = TH1F(hist2,"Time Resolution; #Delta T CH"+str(args.Channel[chan])+"_"+str(f)+";Yields" , 100, 1e-09, 6e-09)
+            if (args.Bias[bias] == '100'):
+               tempCut = 'amp['+str(args.Channel[chan])+']>100 && amp['+str(args.Channel[chan])+']<260 && amp[3] > 100 && amp[3] < 400'
+            elif (args.Bias[bias] == '125'):
+               tempCut = 'amp['+str(chan)+']>100 && amp['+str(chan)+']<350 && amp[3] > 100 && amp[3] < 400'
+            elif (args.Bias[bias] == '150'):
+               tempCut = 'amp['+str(chan)+']>100 && amp['+str(chan)+']<400 && amp[3] > 100 && amp[3] < 400'
+            elif (args.Bias[bias] == '175'):
+               tempCut = 'amp['+str(chan)+']>100 && amp['+str(chan)+']<600 && amp[3] > 100 && amp[3] < 400'
+            else: tempCut = 'amp['+str(chan)+']>300 && amp['+str(chan)+']<850 && amp[3] > 100 && amp[3] < 360'
+            TempCut = TCut(tempCut)
+            #print "Cut ", tempCut 
+            #print "LP2_"+str(f)+"["+str(args.Channel[chan])+"]"+"-LP2_50[3]"           
+            ch.Draw("LP2_"+str(f)+"["+str(args.Channel[chan])+"]"+"-LP2_50[3]>>"+hist2, TempCut)
+            #print ch.GetEntries()
             c1 = TCanvas('c1', 'c1', 800, 600)
+            h2.Draw()
             GausFit = h2.Fit("gaus","S")
             chi2_nparams_gaus = (GausFit.Chi2(), GausFit.NFreeParameters())
-            c1.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"CH"+str(args.Channel[chan])+"_CFD_"+str(f)+".pdf")
+            c1.SaveAs(outputLoc+"Bias"+str(args.Bias[bias])+"_CH"+str(args.Channel[chan])+"_CFD_"+str(f)+".pdf")
             y.append((gaus.GetParameter(2))/1e-12)
             y_err.append((gaus.GetParError(2))/1e-12)
             x_err.append(0)
@@ -112,7 +129,6 @@ for i in range(len(args.Channel)):
     SetPadStyle(c2)
     c2.SetGridy()
     c2.SetGridx()
-    print list(res_2d_transposed)
     gr2 = TGraphErrors(len(Voltage),array('d',Voltage),array('d',list(res_2d_transposed[i])),array('d',Voltage_err),array('d',list(res_2d_err_transposed[i])))
     gr2.SetMarkerColorAlpha(colors[i],0.8)
     gr2.SetLineColor(colors[i])
