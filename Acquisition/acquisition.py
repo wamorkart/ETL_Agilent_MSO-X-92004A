@@ -43,13 +43,11 @@ parser = argparse.ArgumentParser(description='Run info.')
 
 parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=False)
 parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
-parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
 parser.add_argument('--trig',metavar='trig', type=float, default= -0.05, help='trigger value in V (default Aux (-0.05V))',required=False)
 parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGative', help='trigger slope; positive(rise) or negative(fall)',required=False)
 
 args = parser.parse_args()
 trigCh = 'CHANnel'+str(args.trigCh)
-# trigCh = (args.trigCh) # string with trigger channel number [CH1..CH4]
 trigLevel = float(args.trig)
 triggerSlope = args.trigSlope
 
@@ -62,7 +60,7 @@ numEvents = int(args.numEvents) # number of events for each file
 
 #vertical scale
 vScale_ch1 = 0.05 # in Volts for division
-vScale_ch2 = 0.01 # in Volts for division
+vScale_ch2 = 0.1 # in Volts for division
 vScale_ch3 = 0.01 # in Volts for division
 vScale_ch4 = 1 # in Volts for division
 
@@ -88,7 +86,8 @@ with open('runNumber.txt','w') as file:
 
 """#################SET THE OUTPUT FOLDER#################"""
 # The scope save runs localy on a shared folder with
-path = "C:\Users\Public\Documents\Infiniium\Test_Feb18"
+# path = r"C:\Users\Public\Documents\Infiniium\Test_Feb18"
+path = r"C:\Users\Public\Documents\Infiniium\Test_March21"
 dpo.write(':DISK:MDIRectory "{}"'.format(path))
 log_path = "Logbook.txt"
 
@@ -102,12 +101,13 @@ logf.write("---------------------------------------------------------\n\n")
 
 """#################SCOPE HORIZONTAL SETUP#################"""
 # dpo setup
-dpo.write(':CHANnel4:DISPlay 1')
+
 dpo.write(':TIMebase:RANGe {}'.format(hScale)) ## Sets the full-scale horizontal time in s. Range value is ten times the time-per division value.
 # # TIMebase:SCALe
 dpo.write(':TIMebase:POSition 25E-9') ## offset
 dpo.write(':ACQuire:MODE SEGMented') ## fast frame/segmented acquisition mode
 dpo.write(':ACQuire:SEGMented:COUNt {}'.format(numEvents)) ##number of segments to acquire
+dpo.write(':ACQuire:POINts:ANALog 6000')
 
 print("# SCOPE HORIZONTAL SETUP #")
 print('Horizontal scale set to {} for division\n'.format(hScale))
@@ -118,8 +118,8 @@ logf.write('- Horizontal scale set to {} s for division\n\n'.format(hScale))
 """#################SCOPE CHANNELS BANDWIDTH#################"""
 # dpo.write(':ACQuire:BANDwidth MAX') ## set the bandwidth to maximum
 dpo.write('CHANnel1:ISIM:BANDwidth 2.00E+09')
-# dpo.write('CHANnel2:ISIM:BANDwidth 4.00E+09')
-# dpo.write('CHANnel3:ISIM:BANDwidth 3.50E+09')
+dpo.write('CHANnel2:ISIM:BANDwidth 4.00E+09')
+dpo.write('CHANnel3:ISIM:BANDwidth 3.50E+09')
 dpo.write('CHANnel4:ISIM:BANDwidth 2.00E+09')
 """#################SCOPE VERTICAL SETUP#################"""
 #vScale expressed in Volts
@@ -152,11 +152,13 @@ print('Horizontal, vertical, and trigger settings configured.\n')
 """#################DATA TRANSFERRING#################"""
 # configure data transfer settings
 dpo.write(':DIGitize')
+# dpo.write(':RUN')
 print(dpo.query('*OPC?'))
 dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\Users\Public\Documents\AgilentWaveform\Wavenewscope_CH1",H5,ON')
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\Users\Public\Documents\AgilentWaveform\Wavenewscope_CH2",H5,ON')
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\Users\Public\Documents\AgilentWaveform\Wavenewscope_CH3",H5,ON')
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\Users\Public\Documents\AgilentWaveform\Wavenewscope_CH4",H5,ON')
+print(dpo.query('*OPC?'))
+dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_21March_131kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_21March_131kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_21March_131kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_21March_131kseg_test",H5,ON')
 
 dpo.close()
