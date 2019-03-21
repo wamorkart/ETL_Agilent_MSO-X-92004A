@@ -9,8 +9,10 @@ This step produces files in the HDF5 format
 ## Reconstruction
 The files created with the previous step are converted into ROOT TTree's using the h5py python package. This step requires the .h5 files for the 4 channels as input.
 ### How to run?
+* Acquisition
+`python acquisition.py --numEvents 20000 --trigCh 2 --trig -0.05`
+* Conversion
 First make sure you have the h5py package. If you have an existing python installation, do
 `pip install h5py`
-
 Run the conversion script
 `python conversion_h5.py --inputFiles 1 2 3 4`
