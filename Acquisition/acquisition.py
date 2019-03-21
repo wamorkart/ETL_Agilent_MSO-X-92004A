@@ -43,11 +43,13 @@ parser = argparse.ArgumentParser(description='Run info.')
 
 parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=False)
 parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
+parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
 parser.add_argument('--trig',metavar='trig', type=float, default= -0.05, help='trigger value in V (default Aux (-0.05V))',required=False)
 parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGative', help='trigger slope; positive(rise) or negative(fall)',required=False)
 
 args = parser.parse_args()
-trigCh = (args.trigCh) # string with trigger channel number [CH1..CH4]
+trigCh = 'CHANnel'+str(args.trigCh)
+# trigCh = (args.trigCh) # string with trigger channel number [CH1..CH4]
 trigLevel = float(args.trig)
 triggerSlope = args.trigSlope
 
