@@ -41,7 +41,8 @@ print(dpo.query('*idn?'))
 
 parser = argparse.ArgumentParser(description='Run info.')
 
-parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=False)
+parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=True)
+parser.add_argument('--numPoints',metavar='Points', type=str,default = 500, help='numPoints (default 500)',required=True)
 parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
 parser.add_argument('--trig',metavar='trig', type=float, default= -0.05, help='trigger value in V (default Aux (-0.05V))',required=False)
 parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGative', help='trigger slope; positive(rise) or negative(fall)',required=False)
@@ -57,6 +58,7 @@ date = datetime.datetime.now()
 # variables for individual settings
 hScale = 100e-9 # horizontal scale in seconds
 numEvents = int(args.numEvents) # number of events for each file
+numPoints = int(args.numPoints) # number of points to be acquired per event
 
 #vertical scale
 vScale_ch1 = 0.05 # in Volts for division
@@ -107,7 +109,7 @@ dpo.write(':TIMebase:RANGe {}'.format(hScale)) ## Sets the full-scale horizontal
 dpo.write(':TIMebase:POSition 25E-9') ## offset
 dpo.write(':ACQuire:MODE SEGMented') ## fast frame/segmented acquisition mode
 dpo.write(':ACQuire:SEGMented:COUNt {}'.format(numEvents)) ##number of segments to acquire
-dpo.write(':ACQuire:POINts:ANALog 6000')
+dpo.write(':ACQuire:POINts:ANALog {}'.format(numPoints))
 
 print("# SCOPE HORIZONTAL SETUP #")
 print('Horizontal scale set to {} for division\n'.format(hScale))
@@ -156,13 +158,13 @@ dpo.write(':DIGitize')
 print(dpo.query('*OPC?'))
 dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
 print(dpo.query('*OPC?'))
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_21March_20kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_{}".format(runNumber),H5,ON')
 print(dpo.query('*OPC?'))
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_21March_20kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_{}".format(runNumber),H5,ON')
 print(dpo.query('*OPC?'))
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_21March_20kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_{}".format(runNumber),H5,ON')
 print(dpo.query('*OPC?'))
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_21March_20kseg_test",H5,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_{}".format(runNumber),H5,ON')
 print(dpo.query('*OPC?'))
 
 dpo.close()
