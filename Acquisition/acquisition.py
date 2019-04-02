@@ -92,6 +92,7 @@ with open('runNumber.txt','w') as file:
 path = r"C:\Users\Public\Documents\Infiniium\Test_March21"
 dpo.write(':DISK:MDIRectory "{}"'.format(path))
 log_path = "Logbook.txt"
+run_log_path = "RunLog.txt"
 
 #Write in the log file
 logf = open(log_path,"a+")
@@ -101,6 +102,7 @@ logf.write("---------------------------------------------------------\n")
 logf.write("Number of events per file: {} \n".format(numEvents))
 logf.write("---------------------------------------------------------\n\n")
 
+run_logf = open(run_log_path,"w")
 """#################SCOPE HORIZONTAL SETUP#################"""
 # dpo setup
 
@@ -151,27 +153,50 @@ logf.write('- Trigger scale set to %s V\n\n\n\n'%(trigprint))
 
 print('Horizontal, vertical, and trigger settings configured.\n')
 
+status = ""
+status = "busy"
+run_logf.write(status)
+run_logf.write("\n")
+run_logf.close()
+
 """#################DATA TRANSFERRING#################"""
 # configure data transfer settings
 dpo.write(':DIGitize')
+
 # dpo.write(':RUN')
 print(dpo.query('*OPC?'))
 print("Trigger!")
+
+tmp_file = open("RunLog.txt","w")
+status = "writing"
+tmp_file.write(status)
+tmp_file.write("\n")
+tmp_file.close()
+
 dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
 print(dpo.query('*OPC?'))
 print("Ready to save all segments")
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_{}".format(runNumber),H5,ON')
+
+dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_Apr2_%s",BIN,ON'%(runNumber))
 print(dpo.query('*OPC?'))
 print("Saved Channel 1 waveform")
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_{}".format(runNumber),H5,ON')
+
+dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_Apr2_%s",BIN,ON'%(runNumber))
 print(dpo.query('*OPC?'))
 print("Saved Channel 2 waveform")
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_{}".format(runNumber),H5,ON')
+
+dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_Apr2_%s",BIN,ON'%(runNumber))
 print(dpo.query('*OPC?'))
 print("Saved Channel 3 waveform")
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_{}".format(runNumber),H5,ON')
+
+dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_Apr2_%s",BIN,ON'%(runNumber))
 print(dpo.query('*OPC?'))
 print("Saved Channel 4 waveform")
+
+tmp_file2 = open("RunLog.txt","w")
+status = "ready"
+tmp_file2.write(status)
+tmp_file2.write("\n")
 
 
 dpo.close()
