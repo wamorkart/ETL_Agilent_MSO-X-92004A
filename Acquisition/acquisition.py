@@ -62,8 +62,8 @@ numPoints = int(args.numPoints) # number of points to be acquired per event
 
 #vertical scale
 vScale_ch1 = 0.05 # in Volts for division
-vScale_ch2 = 0.1 # in Volts for division
-vScale_ch3 = 0.01 # in Volts for division
+vScale_ch2 = 0.05 # in Volts for division
+vScale_ch3 = 0.1 # in Volts for division
 vScale_ch4 = 1 # in Volts for division
 
 #vertical position
@@ -152,6 +152,7 @@ logf.write('- Trigger Channel set to %s\n'%(trigCh))
 logf.write('- Trigger scale set to %s V\n\n\n\n'%(trigprint))
 
 print('Horizontal, vertical, and trigger settings configured.\n')
+print("Trigger!")
 
 status = ""
 status = "busy"
@@ -162,10 +163,10 @@ run_logf.close()
 """#################DATA TRANSFERRING#################"""
 # configure data transfer settings
 dpo.write(':DIGitize')
-
+print ("digitize")
 # dpo.write(':RUN')
 print(dpo.query('*OPC?'))
-print("Trigger!")
+# print("Trigger!")
 
 tmp_file = open("RunLog.txt","w")
 status = "writing"
