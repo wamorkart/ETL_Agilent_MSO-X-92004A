@@ -50,7 +50,7 @@ for point in range(n_points):
 
 time[0] = time_temp
 for event in range(n_events):
-    i_evt[0] = i1
+    i_evt[0] = event
     channel[0] = Channel1['Channel 1 Seg'+str(event+1)+'Data'].value
     channel[1] = Channel2['Channel 2 Seg'+str(event+1)+'Data'].value
     channel[2] = Channel3['Channel 3 Seg'+str(event+1)+'Data'].value
