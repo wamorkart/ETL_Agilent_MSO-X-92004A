@@ -7,10 +7,10 @@ import time
 import optparse
 import argparse
 
-parser = argparse.ArgumentParser(description='Reconstruction')
-
-parser.add_argument('--inputFiles', metavar='input', type=str, nargs = '+', help='input files from 4 channels',required=True)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description='Reconstruction')
+#
+# parser.add_argument('--inputFiles', metavar='input', type=str, nargs = '+', help='input files from 4 channels',required=True)
+# args = parser.parse_args()
 
 
 
@@ -112,16 +112,17 @@ def fast_Keysight_bin(filepath_in, index_in):
 
 ## read the input files
 
-inputFile1 = 'Wavenewscope_CH.bin'
-inputFile2 = 'Wavenewscope_CH.bin'
-inputFile3 = 'Wavenewscope_CH.bin'
-inputFile4 = 'Wavenewscope_CH.bin'
-
-
 inputFile1 = 'Wavenewscope_CH3_Apr2_87.bin'
 inputFile2 = 'Wavenewscope_CH3_Apr2_87.bin'
 inputFile3 = 'Wavenewscope_CH3_Apr2_87.bin'
 inputFile4 = 'Wavenewscope_CH3_Apr2_87.bin'
+
+input1 = fast_Keysight_bin(inputFile1,1)
+
+n_events = list (input1[1])[0] ## number of events/segments
+n_points = list(input1[2])[0] ## number of points acquired for each event/segment
+print "n_events = ", n_events
+print "n_points = ", n_points
 
 ## prepare the output files
 outputFile = 'output_fastbin.root'
@@ -133,16 +134,10 @@ channel = np.zeros([4,4000],dtype=np.float32)
 time = np.zeros([1,4000],dtype=np.float32)
 
 outTree.Branch('i_evt',i_evt,'i_evt/i')
-outTree.Branch( 'channel', channel, 'channel[4][4000]/F' )
-outTree.Branch( 'time', time, 'time[1][4000]/F')
-
-
-input1 = fast_Keysight_bin(inputFile1,1)
-
-n_events = list (input1[1])[0] ## number of events/segments
-n_points = list(input1[2])[0] ## number of points acquired for each event/segment
-print "n_events = ", n_events
-print "n_points = ", n_points
+outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
+outTree.Branch( 'time', time, 'time[1]['+str(n_points)+']/F' )
+# outTree.Branch( 'channel', channel, 'channel[4][4000]/F' )
+# outTree.Branch( 'time', time, 'time[1][4000]/F')
 
 
 voltage_CH1 = []
