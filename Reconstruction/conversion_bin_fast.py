@@ -130,8 +130,8 @@ outRoot = TFile(outputFile, "RECREATE")
 outTree = TTree("reco","reco")
 
 i_evt = np.zeros(1,dtype=np.dtype("u4"))
-channel = np.zeros([4,4000],dtype=np.float32)
-time = np.zeros([1,4000],dtype=np.float32)
+channel = np.zeros([4,n_points],dtype=np.float32)
+time = np.zeros([1,n_points],dtype=np.float32)
 
 outTree.Branch('i_evt',i_evt,'i_evt/i')
 outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
