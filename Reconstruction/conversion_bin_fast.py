@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 import ROOT
 from ROOT import *
 import time
+import optparse
+import argparse
+
+parser = argparse.ArgumentParser(description='Reconstruction')
+
+parser.add_argument('--inputFiles', metavar='input', type=str, nargs = '+', help='input files from 4 channels',required=True)
+args = parser.parse_args()
+
+
 
 def fast_Keysight_bin(filepath_in, index_in):
     global x_axis, y_axis, remaining
@@ -102,6 +111,13 @@ def fast_Keysight_bin(filepath_in, index_in):
     return return_array, b_nwaveforms, b_points
 
 ## read the input files
+
+inputFile1 = 'Wavenewscope_CH.bin'
+inputFile2 = 'Wavenewscope_CH.bin'
+inputFile3 = 'Wavenewscope_CH.bin'
+inputFile4 = 'Wavenewscope_CH.bin'
+
+
 inputFile1 = 'Wavenewscope_CH3_Apr2_87.bin'
 inputFile2 = 'Wavenewscope_CH3_Apr2_87.bin'
 inputFile3 = 'Wavenewscope_CH3_Apr2_87.bin'
@@ -140,14 +156,14 @@ for i in range(n_points):
     voltage_CH3.append(fast_Keysight_bin(inputFile3, i+1))
     voltage_CH4.append(fast_Keysight_bin(inputFile4, i+1))
 
+channel[0] = voltage_CH1[0][0][1]
+channel[1] = voltage_CH2[0][0][1]
+channel[2] = voltage_CH3[0][0][1]
+channel[3] = voltage_CH4[0][0][1]
+time[0] = voltage_CH1[0][0][0]
+
 for event in range(n_events):
     i_evt[0] = event
-    channel[0] = voltage_CH1[0][0][1]
-    channel[1] = voltage_CH2[0][0][1]
-    channel[2] = voltage_CH3[0][0][1]
-    channel[3] = voltage_CH4[0][0][1]
-    time[0] = voltage_CH1[0][0][0]
-
     outTree.Fill()
 
 outRoot.cd()
