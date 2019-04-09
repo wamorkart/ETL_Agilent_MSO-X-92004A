@@ -120,34 +120,24 @@ outRoot = TFile(outputFile, "RECREATE")
 outTree = TTree("reco","reco")
 
 i_evt = np.zeros(1,dtype=np.dtype("u4"))
-channel = np.zeros([4,n_points*n_events],dtype=np.float32)
-time = np.zeros([1,n_points*n_events],dtype=np.float32)
+channel = np.zeros([4,n_points],dtype=np.float32)
+time = np.zeros([1,n_points],dtype=np.float32)
 
 outTree.Branch('i_evt',i_evt,'i_evt/i')
-outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points*n_events)+']/F' )
-outTree.Branch( 'time', time, 'time[1][['+str(n_points*n_events)+']/F' )
+outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
+outTree.Branch( 'time', time, 'time[1][['+str(n_points)+']/F' )
 
-voltage_CH1 = []
-voltage_CH2 = []
-voltage_CH3 = []
-voltage_CH4 = []
-time_temp = []
-## get voltage values for each event/segment
+## get voltage values for each event/segment (return array gives voltage and time values for each segment. number of entries in the time and voltage arrays are equal to nimber of points)
 for i in range(n_events):
-    time_temp.extend(fast_Keysight_bin(inputFile1, i+1)[0][0]) ## get x values of return array
-    voltage_CH1.extend(fast_Keysight_bin(inputFile1, i+1)[0][1]) ## get y values of the return array
-    voltage_CH2.extend(fast_Keysight_bin(inputFile2, i+1)[0][1])
-    voltage_CH3.extend(fast_Keysight_bin(inputFile3, i+1)[0][1])
-    voltage_CH4.extend(fast_Keysight_bin(inputFile4, i+1)[0][1])
+    channel[0] = fast_Keysight_bin(inputFile1, i+1)[0][1]
+    channel[1] = fast_Keysight_bin(inputFile2, i+1)[0][1]
+    channel[2] = fast_Keysight_bin(inputFile3, i+1)[0][1]
+    channel[3] = fast_Keysight_bin(inputFile4, i+1)[0][1]
+    time[0] = fast_Keysight_bin(inputFile4, i+1)[0][0]
+    i_evt[0] = i
 
-i_evt[0] = n_events
-time[0] = time_temp
-channel[0] = voltage_CH1
-channel[1] = voltage_CH2
-channel[2] = voltage_CH3
-channel[3] = voltage_CH4
+    outTree.Fill()
 
-outTree.Fill()
 
 outRoot.cd()
 outTree.Write()
