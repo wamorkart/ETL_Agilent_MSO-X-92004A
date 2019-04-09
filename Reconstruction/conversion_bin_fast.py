@@ -145,7 +145,7 @@ voltage_CH2 = []
 voltage_CH3 = []
 voltage_CH4 = []
 
-for i in range(n_points):
+for i in range(n_events):
     voltage_CH1.append(fast_Keysight_bin(inputFile1, i+1))
     voltage_CH2.append(fast_Keysight_bin(inputFile2, i+1))
     voltage_CH3.append(fast_Keysight_bin(inputFile3, i+1))
