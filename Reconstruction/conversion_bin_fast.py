@@ -4,8 +4,37 @@ import matplotlib.pyplot as plt
 import ROOT
 from ROOT import *
 import time
+import optparse
+import argparse
 
-def fast_Keysight_bin(filepath_in, index_in):
+parser = argparse.ArgumentParser(description='Creating a root file from Binary format')
+
+parser.add_argument('--Run',metavar='Run', type=str, help='Run Number to process',required=True)
+args = parser.parse_args()
+run = args.Run
+
+
+def keysight_get_points(filepath_in):
+    my_file = open(filepath_in, 'rb')
+    b_cookie = my_file.read(2) #char
+    b_version = my_file.read(2) #char
+    b_size = struct.unpack('i', my_file.read(4)) #int32 - i
+    b_nwaveforms = struct.unpack('i', my_file.read(4)) #int32 - i ## number of events (or segments)
+    b_header = struct.unpack('i', my_file.read(4)) #int32 - i
+    remaining = b_header[0] - 4
+    # print " remaining = ", remaining
+    b_wavetype = struct.unpack('i', my_file.read(4)) #int32 - i
+    # print "b_wavetype = ", b_wavetype
+    remaining = remaining - 4
+    b_wavebuffers = struct.unpack('i', my_file.read(4)) #int32 - i
+    # print " b_wavebuffers = ", (b_wavebuffers[0])
+    remaining = remaining - 4
+    b_points = struct.unpack('i', my_file.read(4)) #int32 - i
+    # my_file.close()
+    return b_points
+
+
+def fast_Keysight_bin(filepath_in, index_in,n_points):
     global x_axis, y_axis, remaining
     x_axis = []
     y_axis = []
@@ -27,13 +56,16 @@ def fast_Keysight_bin(filepath_in, index_in):
         my_index = 1
     counter = 0
 
-    nBytesPerEvent = 16152 ##-- 140+12+16000
+    nBytesPerEvent = 140+12+(4*n_points)
+    # print nBytesPerEvent
+    # nBytesPerEvent = 16152 ##-- 140+12+16000
     my_file.seek( (nBytesPerEvent)*(my_index-1) ,1)
     b_header = struct.unpack('i', my_file.read(4)) #int32 - i
     # print " b_header = ", (b_header)
     remaining = b_header[0] - 4
     # print " remaining = ", remaining
     b_wavetype = struct.unpack('i', my_file.read(4)) #int32 - i
+    # print "b_wavetype = ", b_wavetype
     remaining = remaining - 4
     b_wavebuffers = struct.unpack('i', my_file.read(4)) #int32 - i
     # print " b_wavebuffers = ", (b_wavebuffers[0])
@@ -70,7 +102,8 @@ def fast_Keysight_bin(filepath_in, index_in):
     # print " remaining is now = ", remaining
 
     x_axis = b_x_orig[0] + b_x_inc[0] * np.linspace(0, b_points[0]-1, b_points[0])
-
+    # print " x origin = ", b_x_orig[0]
+    # print " x inc = ", b_x_inc[0]
    # j loop on buffers - only returns the last buffer
     for j in range(0,b_wavebuffers[0]):
         counter += 1
@@ -99,25 +132,38 @@ def fast_Keysight_bin(filepath_in, index_in):
     # print " counter = ", (counter)
     # print len(return_array[0])
     # print (return_array[1])
+    # my_file.close()
     return return_array, b_nwaveforms, b_points
 
 ## read the input files
-inputFile1 = 'Wavenewscope_CH3_Apr2_87.bin'
-inputFile2 = 'Wavenewscope_CH3_Apr2_87.bin'
-inputFile3 = 'Wavenewscope_CH3_Apr2_87.bin'
-inputFile4 = 'Wavenewscope_CH3_Apr2_87.bin'
+inputFile1 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH1_'+run+'.bin'
+inputFile2 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH2_'+run+'.bin'
+inputFile3 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH3_'+run+'.bin'
+inputFile4 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH4_'+run+'.bin'
 
-input1 = fast_Keysight_bin(inputFile1,1) ## to get the number of segments/events and points
+# inputFile1 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH1_test_4000events.bin'
+# inputFile2 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH2_test_4000events.bin'
+# inputFile3 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH3_test_4000events.bin'
+# inputFile4 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH4_test_4000events.bin'
+
+n_points = keysight_get_points(inputFile1)[0]
+print n_points
+# inputFile1 = 'Wavenewscope_CH3_Apr2_87.bin'
+# inputFile2 = 'Wavenewscope_CH3_Apr2_87.bin'
+# inputFile3 = 'Wavenewscope_CH3_Apr2_87.bin'
+# inputFile4 = 'Wavenewscope_CH3_Apr2_87.bin'
+# print "HERE 1"
+input1 = fast_Keysight_bin(inputFile1,1,n_points) ## to get the number of segments/events and points
 
 n_events = list (input1[1])[0] ## number of events/segments
-n_points = list(input1[2])[0] ## number of points acquired for each event/segment
+# n_points = list(input1[2])[0] ## number of points acquired for each event/segment
 print "n_events = ", n_events
 print "n_points = ", n_points
 
 ## prepare the output files
 outputFile = 'output_fastbin.root'
 outRoot = TFile(outputFile, "RECREATE")
-outTree = TTree("reco","reco")
+outTree = TTree("pulse","pulse")
 
 i_evt = np.zeros(1,dtype=np.dtype("u4"))
 channel = np.zeros([4,n_points],dtype=np.float32)
@@ -125,20 +171,22 @@ time = np.zeros([1,n_points],dtype=np.float32)
 
 outTree.Branch('i_evt',i_evt,'i_evt/i')
 outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
-outTree.Branch( 'time', time, 'time[1][['+str(n_points)+']/F' )
+outTree.Branch( 'time', time, 'time[1]['+str(n_points)+']/F' )
 
 ## get voltage values for each event/segment (return array gives voltage and time values for each segment. number of entries in the time and voltage arrays are equal to nimber of points)
+print "HERE 1"
 for i in range(n_events):
-    channel[0] = fast_Keysight_bin(inputFile1, i+1)[0][1]
-    channel[1] = fast_Keysight_bin(inputFile2, i+1)[0][1]
-    channel[2] = fast_Keysight_bin(inputFile3, i+1)[0][1]
-    channel[3] = fast_Keysight_bin(inputFile4, i+1)[0][1]
-    time[0] = fast_Keysight_bin(inputFile4, i+1)[0][0]
+    # print i
+    channel[0] = fast_Keysight_bin(inputFile1, i+1, n_points)[0][1]
+    channel[1] = fast_Keysight_bin(inputFile2, i+1, n_points)[0][1]
+    channel[2] = fast_Keysight_bin(inputFile3, i+1, n_points)[0][1]
+    channel[3] = fast_Keysight_bin(inputFile4, i+1, n_points)[0][1]
+    time[0] = fast_Keysight_bin(inputFile4, i+1, n_points)[0][0]
     i_evt[0] = i
 
     outTree.Fill()
 
-
+print "done filling the tree"
 outRoot.cd()
 outTree.Write()
 outRoot.Close()

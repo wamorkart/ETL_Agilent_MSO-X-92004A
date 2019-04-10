@@ -8,7 +8,7 @@ CMS MTD ETL Test beam
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import sys
 import optparse
 import argparse
@@ -34,7 +34,7 @@ def copynew(source,destination):
 """#################SEARCH/CONNECT#################"""
 # establish communication with dpo
 rm = visa.ResourceManager()
-dpo = rm.open_resource('TCPIP::192.168.133.161::INSTR')
+dpo = rm.open_resource('TCPIP::192.168.133.159::INSTR')
 dpo.timeout = 3000000
 dpo.encoding = 'latin_1'
 print(dpo.query('*idn?'))
@@ -42,10 +42,13 @@ print(dpo.query('*idn?'))
 parser = argparse.ArgumentParser(description='Run info.')
 
 parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=True)
-parser.add_argument('--numPoints',metavar='Points', type=str,default = 500, help='numPoints (default 500)',required=True)
+parser.add_argument('--sampleRate',metavar='sampleRate', type=str,default = 20, help='Sampling rate (default 20)',required=True)
+parser.add_argument('--horizontalWindow',metavar='horizontalWindow', type=str,default = 125, help='horizontal Window (default 125)',required=True)
+# parser.add_argument('--numPoints',metavar='Points', type=str,default = 500, help='numPoints (default 500)',required=True)
 parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='trigger Channel (default Aux (-0.1V))',required=False)
 parser.add_argument('--trig',metavar='trig', type=float, default= -0.05, help='trigger value in V (default Aux (-0.05V))',required=False)
 parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGative', help='trigger slope; positive(rise) or negative(fall)',required=False)
+
 
 args = parser.parse_args()
 trigCh = 'CHANnel'+str(args.trigCh)
@@ -56,10 +59,14 @@ date = datetime.datetime.now()
 
 """#################CONFIGURE INSTRUMENT#################"""
 # variables for individual settings
-hScale = 100e-9 # horizontal scale in seconds
+hScale = float(args.horizontalWindow)*1e-9
+samplingrate = float(args.sampleRate)*1e+9
+# hScale = 100e-9 # horizontal scale in seconds
 numEvents = int(args.numEvents) # number of events for each file
-numPoints = int(args.numPoints) # number of points to be acquired per event
-
+# numPoints = int(args.numPoints) # number of points to be acquired per event
+numPoints = samplingrate*hScale
+# samplerate =  numPoints/hScale ## sampling rate
+# print "samplerate is = ", samplerate
 #vertical scale
 vScale_ch1 = 0.05 # in Volts for division
 vScale_ch2 = 0.05 # in Volts for division
@@ -76,15 +83,17 @@ date = datetime.datetime.now()
 
 """#################CONFIGURE RUN NUMBER#################"""
 # increment the last runNumber by 1
-with open('runNumber.txt') as file:
+RunNumberFile = '/home/daq/JarvisDevelopment/AutoPilot/otsdaq_runNumber.txt'
+with open(RunNumberFile) as file:
     runNumber = int(file.read())
 print('######## Starting RUN {} ########\n'.format(runNumber))
 print('---------------------\n')
 print(date)
 print('---------------------\n')
 
-with open('runNumber.txt','w') as file:
-    file.write(str(runNumber+1))
+#with open('runNumber.txt','w') as file:
+#    file.write(str(runNumber+1))
+
 
 """#################SET THE OUTPUT FOLDER#################"""
 # The scope save runs localy on a shared folder with
@@ -107,11 +116,14 @@ run_logf = open(run_log_path,"w")
 # dpo setup
 
 dpo.write(':TIMebase:RANGe {}'.format(hScale)) ## Sets the full-scale horizontal time in s. Range value is ten times the time-per division value.
-# # TIMebase:SCALe
-dpo.write(':TIMebase:POSition 25E-9') ## offset
+dpo.write(':TIMebase:REFerence:PERCent 85') ## percent of screen location
+dpo.write(':ACQuire:SRATe:ANALog {}'.format(samplingrate))
+# dpo.write(':TIMebase:POSition 25E-9') ## offset
+dpo.write(':TIMebase:POSition 0') ## offset
 dpo.write(':ACQuire:MODE SEGMented') ## fast frame/segmented acquisition mode
 dpo.write(':ACQuire:SEGMented:COUNt {}'.format(numEvents)) ##number of segments to acquire
 dpo.write(':ACQuire:POINts:ANALog {}'.format(numPoints))
+dpo.write(':ACQuire:INTerpolate 0') ## interpolation is set off (otherwise its set to auto, which cause errors downstream)
 
 print("# SCOPE HORIZONTAL SETUP #")
 print('Horizontal scale set to {} for division\n'.format(hScale))
@@ -178,19 +190,27 @@ dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the cur
 print(dpo.query('*OPC?'))
 print("Ready to save all segments")
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_Apr2_%s",BIN,ON'%(runNumber))
+# dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
+dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
+
 print(dpo.query('*OPC?'))
 print("Saved Channel 1 waveform")
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_Apr2_%s",BIN,ON'%(runNumber))
+# dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
+dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
+
 print(dpo.query('*OPC?'))
 print("Saved Channel 2 waveform")
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_Apr2_%s",BIN,ON'%(runNumber))
+# dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
+dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
+
 print(dpo.query('*OPC?'))
 print("Saved Channel 3 waveform")
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_Apr2_%s",BIN,ON'%(runNumber))
+# dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
+dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')
+
 print(dpo.query('*OPC?'))
 print("Saved Channel 4 waveform")
 
