@@ -12,7 +12,8 @@ parser = argparse.ArgumentParser(description='Creating a root file from Binary f
 parser.add_argument('--Run',metavar='Run', type=str, help='Run Number to process',required=True)
 args = parser.parse_args()
 run = args.Run
-
+RawDataPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/KeySightScopeMount/'
+OutputFilePath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RecoData/ConversionRECO/'
 
 def keysight_get_points(filepath_in):
     my_file = open(filepath_in, 'rb')
@@ -136,10 +137,10 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
     return return_array, b_nwaveforms, b_points
 
 ## read the input files
-inputFile1 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH1_'+run+'.bin'
-inputFile2 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH2_'+run+'.bin'
-inputFile3 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH3_'+run+'.bin'
-inputFile4 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH4_'+run+'.bin'
+inputFile1 = RawDataPath + 'Wavenewscope_CH1_'+run+'.bin'
+inputFile2 = RawDataPath + 'Wavenewscope_CH2_'+run+'.bin'
+inputFile3 = RawDataPath + 'Wavenewscope_CH3_'+run+'.bin'
+inputFile4 = RawDataPath + 'Wavenewscope_CH4_'+run+'.bin'
 
 # inputFile1 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH1_test_4000events.bin'
 # inputFile2 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH2_test_4000events.bin'
@@ -161,7 +162,7 @@ print "n_events = ", n_events
 print "n_points = ", n_points
 
 ## prepare the output files
-outputFile = 'output_fastbin.root'
+outputFile = '%srun_scope%s.root' % (OutputFilePath, run)
 outRoot = TFile(outputFile, "RECREATE")
 outTree = TTree("pulse","pulse")
 
