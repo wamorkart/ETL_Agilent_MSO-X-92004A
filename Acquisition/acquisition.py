@@ -14,6 +14,7 @@ import optparse
 import argparse
 import signal
 import os
+import time
 import shutil
 import datetime
 from shutil import copy
@@ -51,7 +52,8 @@ parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGat
 
 
 args = parser.parse_args()
-trigCh = 'CHANnel'+str(args.trigCh)
+trigCh = str(args.trigCh) 
+if trigCh != "AUX": trigCh = 'CHANnel'+trigCh
 trigLevel = float(args.trig)
 triggerSlope = args.trigSlope
 
@@ -68,16 +70,16 @@ numPoints = samplingrate*hScale
 # samplerate =  numPoints/hScale ## sampling rate
 # print "samplerate is = ", samplerate
 #vertical scale
-vScale_ch1 = 0.05 # in Volts for division
-vScale_ch2 = 0.05 # in Volts for division
-vScale_ch3 = 0.1 # in Volts for division
-vScale_ch4 = 1 # in Volts for division
+vScale_ch1 = 0.02 # in Volts for division
+vScale_ch2 = 0.02 # in Volts for division
+vScale_ch3 = 0.05 # in Volts for division
+vScale_ch4 = 0.02 # in Volts for division
 
 #vertical position
-vPos_ch1 = 4  # in Divisions
-vPos_ch2 = 4  # in Divisions
-vPos_ch3 = 4  # in Divisions
-vPos_ch4 = 4  # in Divisions
+vPos_ch1 = 3  # in Divisions
+vPos_ch2 = 3  # in Divisions
+vPos_ch3 = 3  # in Divisions
+vPos_ch4 = 3  # in Divisions
 
 date = datetime.datetime.now()
 
@@ -111,7 +113,7 @@ logf.write("---------------------------------------------------------\n")
 logf.write("Number of events per file: {} \n".format(numEvents))
 logf.write("---------------------------------------------------------\n\n")
 
-run_logf = open(run_log_path,"w")
+
 """#################SCOPE HORIZONTAL SETUP#################"""
 # dpo setup
 
@@ -144,6 +146,12 @@ dpo.write('CHANnel2:SCALe {}'.format(vScale_ch2))
 dpo.write('CHANnel3:SCALe {}'.format(vScale_ch3))
 dpo.write('CHANnel4:SCALe {}'.format(vScale_ch4))
 
+dpo.write('CHANnel1:OFFSet {}'.format(-vScale_ch1 * vPos_ch1))
+dpo.write('CHANnel2:OFFSet {}'.format(-vScale_ch2 * vPos_ch2))
+dpo.write('CHANnel3:OFFSet {}'.format(-vScale_ch3 * vPos_ch3))
+dpo.write('CHANnel4:OFFSet {}'.format(-vScale_ch4 * vPos_ch4))
+
+
 logf.write("VERTICAL SETUP\n")
 logf.write('- CH1: vertical scale set to {} V for division\n'.format(vScale_ch1))
 logf.write('- CH2: vertical scale set to {} V for division\n'.format(vScale_ch2))
@@ -162,25 +170,30 @@ print('Trigger scale set to %s V\n'%(trigprint))
 logf.write("TRIGGER SETUP\n")
 logf.write('- Trigger Channel set to %s\n'%(trigCh))
 logf.write('- Trigger scale set to %s V\n\n\n\n'%(trigprint))
-
+logf.close()
 print('Horizontal, vertical, and trigger settings configured.\n')
 print("Trigger!")
 
+#raise exception("suck it")
 status = ""
 status = "busy"
+
+run_logf = open(run_log_path,"w")
 run_logf.write(status)
-run_logf.write("\n")
+#run_logf.write("\n")
 run_logf.close()
 
 """#################DATA TRANSFERRING#################"""
 # configure data transfer settings
+dpo.timeout = 600000
+time.sleep(2)
 dpo.write(':DIGitize')
 print ("digitize")
-# dpo.write(':RUN')
+#dpo.write(':RUN')
 print(dpo.query('*OPC?'))
 # print("Trigger!")
 
-tmp_file = open("RunLog.txt","w")
+tmp_file = open(run_log_path,"w")
 status = "writing"
 tmp_file.write(status)
 tmp_file.write("\n")
@@ -190,34 +203,35 @@ dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the cur
 print(dpo.query('*OPC?'))
 print("Ready to save all segments")
 
-# dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
+#dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 1 waveform")
 
-# dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
+#dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 2 waveform")
 
-# dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
+#dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 3 waveform")
 
-# dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')
+dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
+#dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 4 waveform")
 
-tmp_file2 = open("RunLog.txt","w")
+tmp_file2 = open(run_log_path,"w")
 status = "ready"
 tmp_file2.write(status)
 tmp_file2.write("\n")
+tmp_file2.close()
 
 
 dpo.close()
