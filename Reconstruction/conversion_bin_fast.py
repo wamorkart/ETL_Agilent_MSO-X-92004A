@@ -6,6 +6,7 @@ from ROOT import *
 import time
 import optparse
 import argparse
+import os
 
 parser = argparse.ArgumentParser(description='Creating a root file from Binary format')
 
@@ -13,7 +14,10 @@ parser.add_argument('--Run',metavar='Run', type=str, help='Run Number to process
 args = parser.parse_args()
 run = args.Run
 RawDataPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/KeySightScopeMount/'
+RawDataLocalCopyPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RawData/'
 OutputFilePath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RecoData/ConversionRECO/'
+
+Debug=False
 
 def keysight_get_points(filepath_in):
     my_file = open(filepath_in, 'rb')
@@ -62,17 +66,17 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
     # nBytesPerEvent = 16152 ##-- 140+12+16000
     my_file.seek( (nBytesPerEvent)*(my_index-1) ,1)
     b_header = struct.unpack('i', my_file.read(4)) #int32 - i
-    # print " b_header = ", (b_header)
+    #print " b_header = ", (b_header)
     remaining = b_header[0] - 4
     # print " remaining = ", remaining
     b_wavetype = struct.unpack('i', my_file.read(4)) #int32 - i
-    # print "b_wavetype = ", b_wavetype
+    #print "b_wavetype = ", b_wavetype
     remaining = remaining - 4
     b_wavebuffers = struct.unpack('i', my_file.read(4)) #int32 - i
-    # print " b_wavebuffers = ", (b_wavebuffers[0])
+    #print " b_wavebuffers = ", (b_wavebuffers[0])
     remaining = remaining - 4
     b_points = struct.unpack('i', my_file.read(4)) #int32 - i
-    # print " b_point =", (b_points)
+    #print " b_point =", (b_points)
     remaining = remaining - 4
     b_count = struct.unpack('i', my_file.read(4)) #int32 - i
     remaining = remaining - 4
@@ -110,7 +114,7 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
         counter += 1
         #header size - int 32
         b_header = struct.unpack('i' , my_file.read(4)) #int32 - i
-        # print 'buffer header size: ' ,( str(b_header[0]))
+       # print 'buffer header size: ' ,( str(b_header[0]))
         remaining = b_header[0] - 4
         #buffer type - int16
         b_buffer_type = struct.unpack('h' , my_file.read(2)) #int16 - h
@@ -118,11 +122,11 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
         remaining = remaining - 2
         #bytes per point - int16
         b_bytes_per_point = struct.unpack('h' , my_file.read(2)) #int16 - h
-        # print 'bytes per point: ' ,( str(b_bytes_per_point[0]) )
+        #print 'bytes per point: ' ,( str(b_bytes_per_point[0]) )
         remaining = remaining - 2
         #buffer size - int32
         b_buffer_size = struct.unpack('i' , my_file.read(4)) #int32 - i
-        # print 'buffer size: ' ,( str(b_buffer_size[0]) )
+        #print 'buffer size: ' ,( str(b_buffer_size[0]) )
         remaining = remaining - 4
         # create y axis for voltage vector
         # currently ONLY standard voltage -  float32 - Buffer Type 1 / 2 / 3
@@ -136,11 +140,18 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
     # my_file.close()
     return return_array, b_nwaveforms, b_points
 
+
+#### Copy files locally, and if successful, move them to "to_delete" directory
+
+print "Copying files locally."
+rawFiles = RawDataPath + 'Wavenewscope_CH*_'+run+'.bin'
+os.system('rsync -z -v %s %s && mv %s %s' % (rawFiles,RawDataLocalCopyPath,rawFiles,RawDataPath+"/to_delete/"))
+print "Starting conversion."
 ## read the input files
-inputFile1 = RawDataPath + 'Wavenewscope_CH1_'+run+'.bin'
-inputFile2 = RawDataPath + 'Wavenewscope_CH2_'+run+'.bin'
-inputFile3 = RawDataPath + 'Wavenewscope_CH3_'+run+'.bin'
-inputFile4 = RawDataPath + 'Wavenewscope_CH4_'+run+'.bin'
+inputFile1 = RawDataLocalCopyPath + 'Wavenewscope_CH1_'+run+'.bin'
+inputFile2 = RawDataLocalCopyPath + 'Wavenewscope_CH2_'+run+'.bin'
+inputFile3 = RawDataLocalCopyPath + 'Wavenewscope_CH3_'+run+'.bin'
+inputFile4 = RawDataLocalCopyPath + 'Wavenewscope_CH4_'+run+'.bin'
 
 # inputFile1 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH1_test_4000events.bin'
 # inputFile2 = '/home/daq/fnal_tb_18_11/AgilentMount/Wavenewscope_CH2_test_4000events.bin'
@@ -157,7 +168,7 @@ print n_points
 input1 = fast_Keysight_bin(inputFile1,1,n_points) ## to get the number of segments/events and points
 
 n_events = list (input1[1])[0] ## number of events/segments
-# n_points = list(input1[2])[0] ## number of points acquired for each event/segment
+n_points = list(input1[2])[0] ## number of points acquired for each event/segment
 print "n_events = ", n_events
 print "n_points = ", n_points
 
@@ -175,9 +186,11 @@ outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
 outTree.Branch( 'time', time, 'time[1]['+str(n_points)+']/F' )
 
 ## get voltage values for each event/segment (return array gives voltage and time values for each segment. number of entries in the time and voltage arrays are equal to nimber of points)
-print "HERE 1"
+#print "HERE 1"
+if Debug: n_events=10
 for i in range(n_events):
-    # print i
+    if i%1000==0:
+        print "Processing event %i" % i
     channel[0] = fast_Keysight_bin(inputFile1, i+1, n_points)[0][1]
     channel[1] = fast_Keysight_bin(inputFile2, i+1, n_points)[0][1]
     channel[2] = fast_Keysight_bin(inputFile3, i+1, n_points)[0][1]

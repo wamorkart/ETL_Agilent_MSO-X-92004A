@@ -50,13 +50,21 @@ parser.add_argument('--trigCh',metavar='trigCh', type=str, default='AUX',help='t
 parser.add_argument('--trig',metavar='trig', type=float, default= -0.05, help='trigger value in V (default Aux (-0.05V))',required=False)
 parser.add_argument('--trigSlope',metavar='trigSlope', type=str, default= 'NEGative', help='trigger slope; positive(rise) or negative(fall)',required=False)
 
+parser.add_argument('--vScale1',metavar='vScale1', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
+parser.add_argument('--vScale2',metavar='vScale2', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
+parser.add_argument('--vScale3',metavar='vScale3', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
+parser.add_argument('--vScale4',metavar='vScale4', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
+
+parser.add_argument('--timeoffset',metavar='timeoffset', type=float, default=-160, help='Offset to compensate for trigger delay. This is the delta T between the center of the acquisition window and the trigger. (default for NimPlusX: -160 ns)',required=False)
+
 
 args = parser.parse_args()
 trigCh = str(args.trigCh) 
 if trigCh != "AUX": trigCh = 'CHANnel'+trigCh
 trigLevel = float(args.trig)
 triggerSlope = args.trigSlope
-
+timeoffset = float(args.timeoffset)*1e-9
+print "timeoffset is ",timeoffset
 date = datetime.datetime.now()
 
 """#################CONFIGURE INSTRUMENT#################"""
@@ -69,11 +77,12 @@ numEvents = int(args.numEvents) # number of events for each file
 numPoints = samplingrate*hScale
 # samplerate =  numPoints/hScale ## sampling rate
 # print "samplerate is = ", samplerate
+
 #vertical scale
-vScale_ch1 = 0.02 # in Volts for division
-vScale_ch2 = 0.02 # in Volts for division
-vScale_ch3 = 0.05 # in Volts for division
-vScale_ch4 = 0.02 # in Volts for division
+vScale_ch1 =float(args.vScale1) # in Volts for division
+vScale_ch2 =float(args.vScale2) # in Volts for division
+vScale_ch3 =float(args.vScale3) # in Volts for division
+vScale_ch4 =float(args.vScale4) # in Volts for division
 
 #vertical position
 vPos_ch1 = 3  # in Divisions
@@ -101,9 +110,9 @@ print('---------------------\n')
 # The scope save runs localy on a shared folder with
 # path = r"C:\Users\Public\Documents\Infiniium\Test_Feb18"
 path = r"C:\Users\Public\Documents\Infiniium\Test_March21"
-dpo.write(':DISK:MDIRectory "{}"'.format(path))
-log_path = "Logbook.txt"
-run_log_path = "RunLog.txt"
+dpo.write(':DISK:MDIRectory "{}"'.format(path)) ## what is this for?
+log_path = "/home/daq/2019_04_April_CMSTiming/KeySightScope/ETL_Agilent_MSO-X-92004A/Acquisition/Logbook.txt"
+run_log_path = "/home/daq/2019_04_April_CMSTiming/KeySightScope/ETL_Agilent_MSO-X-92004A/Acquisition/RunLog.txt"
 
 #Write in the log file
 logf = open(log_path,"a+")
@@ -118,10 +127,11 @@ logf.write("---------------------------------------------------------\n\n")
 # dpo setup
 
 dpo.write(':TIMebase:RANGe {}'.format(hScale)) ## Sets the full-scale horizontal time in s. Range value is ten times the time-per division value.
-dpo.write(':TIMebase:REFerence:PERCent 85') ## percent of screen location
+dpo.write(':TIMebase:REFerence:PERCent 50') ## percent of screen location
 dpo.write(':ACQuire:SRATe:ANALog {}'.format(samplingrate))
-# dpo.write(':TIMebase:POSition 25E-9') ## offset
-dpo.write(':TIMebase:POSition 0') ## offset
+#dpo.write(':TIMebase:POSition 25E-9') ## offset
+print ':TIMebase:POSition {}'.format(timeoffset)
+dpo.write(':TIMebase:POSition {}'.format(timeoffset)) ## offset
 dpo.write(':ACQuire:MODE SEGMented') ## fast frame/segmented acquisition mode
 dpo.write(':ACQuire:SEGMented:COUNt {}'.format(numEvents)) ##number of segments to acquire
 dpo.write(':ACQuire:POINts:ANALog {}'.format(numPoints))
@@ -135,10 +145,10 @@ logf.write('- Horizontal scale set to {} s for division\n\n'.format(hScale))
 
 """#################SCOPE CHANNELS BANDWIDTH#################"""
 # dpo.write(':ACQuire:BANDwidth MAX') ## set the bandwidth to maximum
-dpo.write('CHANnel1:ISIM:BANDwidth 2.00E+09')
-dpo.write('CHANnel2:ISIM:BANDwidth 4.00E+09')
-dpo.write('CHANnel3:ISIM:BANDwidth 3.50E+09')
-dpo.write('CHANnel4:ISIM:BANDwidth 2.00E+09')
+dpo.write('CHANnel1:ISIM:BANDwidth 10.0E+09')
+dpo.write('CHANnel2:ISIM:BANDwidth 10.0E+09')
+dpo.write('CHANnel3:ISIM:BANDwidth 10.0E+09')
+dpo.write('CHANnel4:ISIM:BANDwidth 10.0E+09')
 """#################SCOPE VERTICAL SETUP#################"""
 #vScale expressed in Volts
 dpo.write('CHANnel1:SCALe {}'.format(vScale_ch1))
