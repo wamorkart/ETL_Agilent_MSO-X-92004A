@@ -94,7 +94,7 @@ date = datetime.datetime.now()
 
 """#################CONFIGURE RUN NUMBER#################"""
 # increment the last runNumber by 1
-RunNumberFile = '/home/daq/JarvisDevelopment/AutoPilot/otsdaq_runNumber.txt'
+RunNumberFile = '/home/daq/JARVIS/AutoPilot/otsdaq_runNumber.txt'
 with open(RunNumberFile) as file:
     runNumber = int(file.read())
 print('######## Starting RUN {} ########\n'.format(runNumber))
