@@ -55,7 +55,7 @@ parser.add_argument('--vScale2',metavar='vScale2', type=float, default= 0.02, he
 parser.add_argument('--vScale3',metavar='vScale3', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
 parser.add_argument('--vScale4',metavar='vScale4', type=float, default= 0.02, help='Vertical scale, volts/div',required=False)
 
-parser.add_argument('--timeoffset',metavar='timeoffset', type=float, default=-160, help='Offset to compensate for trigger delay. This is the delta T between the center of the acquisition window and the trigger. (default for NimPlusX: -160 ns)',required=False)
+parser.add_argument('--timeoffset',metavar='timeoffset', type=float, default=-130, help='Offset to compensate for trigger delay. This is the delta T between the center of the acquisition window and the trigger. (default for NimPlusX: -160 ns)',required=False)
 
 
 args = parser.parse_args()
@@ -184,7 +184,6 @@ logf.close()
 print('Horizontal, vertical, and trigger settings configured.\n')
 print("Trigger!")
 
-#raise exception("suck it")
 status = ""
 status = "busy"
 
@@ -192,10 +191,11 @@ run_logf = open(run_log_path,"w")
 run_logf.write(status)
 #run_logf.write("\n")
 run_logf.close()
+#raise exception("suck it")
 
 """#################DATA TRANSFERRING#################"""
 # configure data transfer settings
-dpo.timeout = 600000
+#dpo.timeout = 600000
 time.sleep(2)
 dpo.write(':DIGitize')
 print ("digitize")
@@ -218,18 +218,20 @@ dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentW
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 1 waveform")
-
+time.sleep(1)
 dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
 #dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 2 waveform")
+time.sleep(1)
 
 dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
 #dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
 
 print(dpo.query('*OPC?'))
 print("Saved Channel 3 waveform")
+time.sleep(1)
 
 dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
 #dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')

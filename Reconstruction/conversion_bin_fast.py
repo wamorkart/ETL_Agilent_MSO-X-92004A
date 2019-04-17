@@ -66,9 +66,14 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
     # nBytesPerEvent = 16152 ##-- 140+12+16000
     my_file.seek( (nBytesPerEvent)*(my_index-1) ,1)
     b_header = struct.unpack('i', my_file.read(4)) #int32 - i
+    # if b_header[0]!=140:
+    #     print "bad event, skipping"
+    #     x_axis = np.linspace(0, 1000, n_points)
+    #     y_axis = np.linspace(0, 1000, n_points)
+    #     return [x_axis,y_axis]
     #print " b_header = ", (b_header)
     remaining = b_header[0] - 4
-    # print " remaining = ", remaining
+    #print " remaining = ", remaining
     b_wavetype = struct.unpack('i', my_file.read(4)) #int32 - i
     #print "b_wavetype = ", b_wavetype
     remaining = remaining - 4
@@ -106,9 +111,12 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
     remaining = remaining - 4
     # print " remaining is now = ", remaining
 
+   # print " x origin = ", b_x_orig[0]
+   # print " x inc = ", b_x_inc[0]
+   # print b_points[0]
+
     x_axis = b_x_orig[0] + b_x_inc[0] * np.linspace(0, b_points[0]-1, b_points[0])
-    # print " x origin = ", b_x_orig[0]
-    # print " x inc = ", b_x_inc[0]
+ 
    # j loop on buffers - only returns the last buffer
     for j in range(0,b_wavebuffers[0]):
         counter += 1
@@ -148,8 +156,11 @@ rawFiles = RawDataPath + 'Wavenewscope_CH*_'+run+'.bin'
 os.system('rsync -z -v %s %s && mv %s %s' % (rawFiles,RawDataLocalCopyPath,rawFiles,RawDataPath+"/to_delete/"))
 print "Starting conversion."
 ## read the input files
+print "file1"
 inputFile1 = RawDataLocalCopyPath + 'Wavenewscope_CH1_'+run+'.bin'
+print "file2"
 inputFile2 = RawDataLocalCopyPath + 'Wavenewscope_CH2_'+run+'.bin'
+print "file3"
 inputFile3 = RawDataLocalCopyPath + 'Wavenewscope_CH3_'+run+'.bin'
 inputFile4 = RawDataLocalCopyPath + 'Wavenewscope_CH4_'+run+'.bin'
 
