@@ -43,6 +43,7 @@ print(dpo.query('*idn?'))
 parser = argparse.ArgumentParser(description='Run info.')
 
 parser.add_argument('--numEvents',metavar='Events', type=str,default = 500, help='numEvents (default 500)',required=True)
+parser.add_argument('--runNumber',metavar='runNumber', type=str,default = -1, help='runNumber (default -1)',required=False)
 parser.add_argument('--sampleRate',metavar='sampleRate', type=str,default = 20, help='Sampling rate (default 20)',required=True)
 parser.add_argument('--horizontalWindow',metavar='horizontalWindow', type=str,default = 125, help='horizontal Window (default 125)',required=True)
 # parser.add_argument('--numPoints',metavar='Points', type=str,default = 500, help='numPoints (default 500)',required=True)
@@ -58,8 +59,10 @@ parser.add_argument('--vScale4',metavar='vScale4', type=float, default= 0.02, he
 parser.add_argument('--timeoffset',metavar='timeoffset', type=float, default=-130, help='Offset to compensate for trigger delay. This is the delta T between the center of the acquisition window and the trigger. (default for NimPlusX: -160 ns)',required=False)
 
 
+
 args = parser.parse_args()
 trigCh = str(args.trigCh) 
+runNumberParam = int(args.runNumber) 
 if trigCh != "AUX": trigCh = 'CHANnel'+trigCh
 trigLevel = float(args.trig)
 triggerSlope = args.trigSlope
@@ -88,20 +91,23 @@ vScale_ch4 =float(args.vScale4) # in Volts for division
 vPos_ch1 = 3  # in Divisions
 vPos_ch2 = 3  # in Divisions
 vPos_ch3 = 3  # in Divisions
-vPos_ch4 = 3  # in Divisions
+vPos_ch4 = 2  # in Divisions
 
 date = datetime.datetime.now()
 
 """#################CONFIGURE RUN NUMBER#################"""
 # increment the last runNumber by 1
-RunNumberFile = '/home/daq/JARVIS/AutoPilot/otsdaq_runNumber.txt'
-with open(RunNumberFile) as file:
-    runNumber = int(file.read())
-print('######## Starting RUN {} ########\n'.format(runNumber))
-print('---------------------\n')
-print(date)
-print('---------------------\n')
 
+if runNumberParam == -1:
+	RunNumberFile = '/home/daq/JARVIS/AutoPilot/otsdaq_runNumber.txt'
+	with open(RunNumberFile) as file:
+	    runNumber = int(file.read())
+	print('######## Starting RUN {} ########\n'.format(runNumber))
+	print('---------------------\n')
+	print(date)
+	print('---------------------\n')
+
+else: runNumber = runNumberParam
 #with open('runNumber.txt','w') as file:
 #    file.write(str(runNumber+1))
 
@@ -126,6 +132,8 @@ logf.write("---------------------------------------------------------\n\n")
 """#################SCOPE HORIZONTAL SETUP#################"""
 # dpo setup
 
+dpo.write(':STOP;*OPC?')
+
 dpo.write(':TIMebase:RANGe {}'.format(hScale)) ## Sets the full-scale horizontal time in s. Range value is ten times the time-per division value.
 dpo.write(':TIMebase:REFerence:PERCent 50') ## percent of screen location
 dpo.write(':ACQuire:SRATe:ANALog {}'.format(samplingrate))
@@ -145,10 +153,17 @@ logf.write('- Horizontal scale set to {} s for division\n\n'.format(hScale))
 
 """#################SCOPE CHANNELS BANDWIDTH#################"""
 # dpo.write(':ACQuire:BANDwidth MAX') ## set the bandwidth to maximum
-dpo.write('CHANnel1:ISIM:BANDwidth 10.0E+09')
-dpo.write('CHANnel2:ISIM:BANDwidth 10.0E+09')
-dpo.write('CHANnel3:ISIM:BANDwidth 10.0E+09')
-dpo.write('CHANnel4:ISIM:BANDwidth 10.0E+09')
+# dpo.write('CHANnel1:ISIM:BANDwidth 2.0E+09')
+# dpo.write('CHANnel2:ISIM:BANDwidth 2.0E+09')
+# dpo.write('CHANnel3:ISIM:BANDwidth 2.0E+09')
+# dpo.write('CHANnel4:ISIM:BANDwidth 2.0E+09')
+
+# dpo.write('CHANnel1:ISIM:BWLimit 1')
+# dpo.write('CHANnel2:ISIM:BWLimit 1')
+# dpo.write('CHANnel3:ISIM:BWLimit 1')
+# dpo.write('CHANnel4:ISIM:BWLimit 1')
+
+dpo.write(':ACQuire:BANDwidth 3.5E9')
 """#################SCOPE VERTICAL SETUP#################"""
 #vScale expressed in Volts
 dpo.write('CHANnel1:SCALe {}'.format(vScale_ch1))
@@ -182,7 +197,7 @@ logf.write('- Trigger Channel set to %s\n'%(trigCh))
 logf.write('- Trigger scale set to %s V\n\n\n\n'%(trigprint))
 logf.close()
 print('Horizontal, vertical, and trigger settings configured.\n')
-print("Trigger!")
+#print("Trigger!")
 
 status = ""
 status = "busy"
@@ -197,10 +212,25 @@ run_logf.close()
 # configure data transfer settings
 #dpo.timeout = 600000
 time.sleep(2)
-dpo.write(':DIGitize')
-print ("digitize")
-#dpo.write(':RUN')
-print(dpo.query('*OPC?'))
+#dpo.write(':DIGitize')
+#print ("digitize")
+
+print(dpo.write(':CDISplay'))
+
+dpo.write('*CLS;:SINGle')
+
+while True:
+#	print "Ader is ",dpo.query(':ADER?')
+#	print "OPC is ",dpo.query('*OPC?')
+	if (int(dpo.query(':ADER?')) == 1): 
+		print "Acquisition complete"
+		break
+	else:
+		#print "Still waiting" 
+
+		time.sleep(0.2)
+
+#print(dpo.query('*OPC?'))
 # print("Trigger!")
 
 tmp_file = open(run_log_path,"w")
@@ -212,7 +242,7 @@ tmp_file.close()
 dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
 print(dpo.query('*OPC?'))
 print("Ready to save all segments")
-
+time.sleep(0.5)
 dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
 #dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
 
