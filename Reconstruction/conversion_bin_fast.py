@@ -1,6 +1,5 @@
 import struct  #struct unpack result - tuple
 import numpy as np
-import matplotlib.pyplot as plt
 import ROOT
 from ROOT import *
 import time
