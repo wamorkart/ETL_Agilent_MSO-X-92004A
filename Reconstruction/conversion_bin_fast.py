@@ -12,11 +12,25 @@ parser = argparse.ArgumentParser(description='Creating a root file from Binary f
 parser.add_argument('--Run',metavar='Run', type=str, help='Run Number to process',required=True)
 args = parser.parse_args()
 run = args.Run
-RawDataPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/KeySightScopeMount/'
-RawDataLocalCopyPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RawData/'
-OutputFilePath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RecoData/ConversionRECO/'
+RawDataPath = '/uscms/home/rheller/nobackup/2020_02_CMSTiming/KeySightScope/RawData/'
+RawDataLocalCopyPath = '' #'/uscms/home/rheller/nobackup/2020_02_CMSTiming/KeySightScope/RawData/'
+OutputFilePath = ''#'/uscms/home/rheller/nobackup/2020_02_CMSTiming/KeySightScope/RecoData/ConversionRECO/'
 
+eosPath = "root://cmseos.fnal.gov//store/group/cmstestbeam/2020_02_CMSTiming/KeySightScope/RecoData/ConversionRECO/"
+LocalMode=True
 Debug=False
+CopyToEOS=True
+
+if os.path.exists("_condor_stdout"):
+    print "detected condor"
+    LocalMode=False
+
+if LocalMode:
+    RawDataPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/KeySightScopeMount/'
+    RawDataLocalCopyPath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RawData/'
+    OutputFilePath = '/home/daq/2019_04_April_CMSTiming/KeySightScope/RecoData/ConversionRECO/'
+
+
 
 def keysight_get_points(filepath_in):
     my_file = open(filepath_in, 'rb')
@@ -152,7 +166,8 @@ def fast_Keysight_bin(filepath_in, index_in,n_points):
 
 print "Copying files locally."
 rawFiles = RawDataPath + 'Wavenewscope_CH*_'+run+'.bin'
-os.system('rsync -z -v %s %s && mv %s %s' % (rawFiles,RawDataLocalCopyPath,rawFiles,RawDataPath+"/to_delete/"))
+if LocalMode: os.system('rsync -z -v %s %s && mv %s %s' % (rawFiles,RawDataLocalCopyPath,rawFiles,RawDataPath+"/to_delete/"))
+
 print "Starting conversion."
 ## read the input files
 print "file1"
@@ -192,12 +207,12 @@ channel = np.zeros([4,n_points],dtype=np.float32)
 time = np.zeros([1,n_points],dtype=np.float32)
 
 outTree.Branch('i_evt',i_evt,'i_evt/i')
-outTree.Branch( 'channel', channel, 'channel[4]['+str(n_points)+']/F' )
-outTree.Branch( 'time', time, 'time[1]['+str(n_points)+']/F' )
+outTree.Branch('channel', channel, 'channel[4]['+str(n_points)+']/F' )
+outTree.Branch('time', time, 'time[1]['+str(n_points)+']/F' )
 
 ## get voltage values for each event/segment (return array gives voltage and time values for each segment. number of entries in the time and voltage arrays are equal to nimber of points)
 #print "HERE 1"
-if Debug: n_events=10
+if Debug: n_events=1000
 for i in range(n_events):
     if i%1000==0:
         print "Processing event %i" % i
@@ -214,3 +229,7 @@ print "done filling the tree"
 outRoot.cd()
 outTree.Write()
 outRoot.Close()
+
+if CopyToEOS: os.system("xrdcp -fs %s %s" %(outputFile,eosPath)) 
+print "done copying to EOS"
+
