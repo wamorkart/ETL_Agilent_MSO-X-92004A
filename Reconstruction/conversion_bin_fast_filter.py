@@ -1,6 +1,5 @@
 import struct  #struct unpack result - tuple
 import numpy as np
-import matplotlib.pyplot as plt
 import ROOT
 from ROOT import *
 import time
@@ -17,12 +16,12 @@ parser.add_argument('--Freq',metavar='Freq', type=str, help='Filter cutoff',requ
 args = parser.parse_args()
 run = args.Run
 freq = args.Freq
-RawDataPath = '/uscms_data/d3/twamorka/FilterStudy/binFiles_Local/'
-RawDataLocalCopyPath = '/uscms/homes/t/twamorka/work/FilterStudy/local_Copy/'
-OutputFilePath = '/uscms_data/d3/twamorka/FilterStudy/reco_Filter_2020TB/'
+RawDataPath = ''
+RawDataLocalCopyPath = ''
+OutputFilePath = ''
 
-eosPath = "root://cmseos.fnal.gov//store/group/cmstestbeam/2020_02_CMSTiming/KeySightScope/RecoData/ConversionRECO/"
-LocalMode=True
+eosPath = "root://cmseos.fnal.gov//store/group/cmstestbeam/2020_02_CMSTiming/KeySightScope/RecoData/FilterConversionRECO/"
+LocalMode=False
 Debug=False
 CopyToEOS=True
 
@@ -241,3 +240,6 @@ print "done filling the tree"
 outRoot.cd()
 outTree.Write()
 outRoot.Close()
+
+if CopyToEOS: os.system("xrdcp -fs %s %s" %(outputFile,eosPath)) 
+print "done copying to EOS"
