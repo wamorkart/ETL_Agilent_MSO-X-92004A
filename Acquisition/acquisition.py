@@ -18,7 +18,7 @@ import time
 import shutil
 import datetime
 from shutil import copy
-
+ 
 stop_asap = False
 
 import visa
@@ -34,7 +34,7 @@ def copynew(source,destination):
 
 """#################SEARCH/CONNECT#################"""
 # establish communication with dpo
-rm = visa.ResourceManager()
+rm = visa.ResourceManager("@py")
 dpo = rm.open_resource('TCPIP::192.168.133.159::INSTR')
 dpo.timeout = 3000000
 dpo.encoding = 'latin_1'
@@ -58,6 +58,8 @@ parser.add_argument('--vScale4',metavar='vScale4', type=float, default= 0.02, he
 
 parser.add_argument('--timeoffset',metavar='timeoffset', type=float, default=-130, help='Offset to compensate for trigger delay. This is the delta T between the center of the acquisition window and the trigger. (default for NimPlusX: -160 ns)',required=False)
 
+parser.add_argument('--save',metavar='save', type=int, default= 1, help='Save waveforms',required=False)
+parser.add_argument('--timeout',metavar='timeout', type=float, default= -1, help='Max run duration [s]',required=False)
 
 
 args = parser.parse_args()
@@ -69,7 +71,10 @@ triggerSlope = args.trigSlope
 timeoffset = float(args.timeoffset)*1e-9
 print "timeoffset is ",timeoffset
 date = datetime.datetime.now()
-
+savewaves = int(args.save)
+timeout = float(args.timeout)
+print savewaves
+print "timeout is ",timeout
 """#################CONFIGURE INSTRUMENT#################"""
 # variables for individual settings
 hScale = float(args.horizontalWindow)*1e-9
@@ -88,10 +93,10 @@ vScale_ch3 =float(args.vScale3) # in Volts for division
 vScale_ch4 =float(args.vScale4) # in Volts for division
 
 #vertical position
-vPos_ch1 = 3  # in Divisions
-vPos_ch2 = 3  # in Divisions
-vPos_ch3 = 3  # in Divisions
-vPos_ch4 = 2  # in Divisions
+vPos_ch1 = 3#0 #3  # in Divisions
+vPos_ch2 = -2#3 #3  # in Divisions
+vPos_ch3 = 3#-1 #3  # in Divisions
+vPos_ch4 = 3#3 #3  # in Divisions
 
 date = datetime.datetime.now()
 
@@ -117,8 +122,8 @@ else: runNumber = runNumberParam
 # path = r"C:\Users\Public\Documents\Infiniium\Test_Feb18"
 path = r"C:\Users\Public\Documents\Infiniium\Test_March21"
 dpo.write(':DISK:MDIRectory "{}"'.format(path)) ## what is this for?
-log_path = "/home/daq/2019_04_April_CMSTiming/KeySightScope/ETL_Agilent_MSO-X-92004A/Acquisition/Logbook.txt"
-run_log_path = "/home/daq/2019_04_April_CMSTiming/KeySightScope/ETL_Agilent_MSO-X-92004A/Acquisition/RunLog.txt"
+log_path = "/home/daq/ETL_Agilent_MSO-X-92004A/Acquisition/Logbook.txt"
+run_log_path = "/home/daq/ETL_Agilent_MSO-X-92004A/Acquisition/RunLog.txt"
 
 #Write in the log file
 logf = open(log_path,"a+")
@@ -163,7 +168,7 @@ logf.write('- Horizontal scale set to {} s for division\n\n'.format(hScale))
 # dpo.write('CHANnel3:ISIM:BWLimit 1')
 # dpo.write('CHANnel4:ISIM:BWLimit 1')
 
-dpo.write(':ACQuire:BANDwidth 3.5E9')
+dpo.write(':ACQuire:BANDwidth 2.E9')
 """#################SCOPE VERTICAL SETUP#################"""
 #vScale expressed in Volts
 dpo.write('CHANnel1:SCALe {}'.format(vScale_ch1))
@@ -218,7 +223,8 @@ time.sleep(2)
 print(dpo.write(':CDISplay'))
 
 dpo.write('*CLS;:SINGle')
-
+start = time.time()
+end_early = False
 while True:
 #	print "Ader is ",dpo.query(':ADER?')
 #	print "OPC is ",dpo.query('*OPC?')
@@ -227,9 +233,13 @@ while True:
 		break
 	else:
 		#print "Still waiting" 
+		time.sleep(0.1)
+		if not savewaves and timeout > 0 and time.time() - start > timeout:
+			end_early=True
+			dpo.write(':STOP;*OPC?')
+			break
 
-		time.sleep(0.2)
-
+end = time.time()
 #print(dpo.query('*OPC?'))
 # print("Trigger!")
 
@@ -239,36 +249,42 @@ tmp_file.write(status)
 tmp_file.write("\n")
 tmp_file.close()
 
-dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
-print(dpo.query('*OPC?'))
-print("Ready to save all segments")
-time.sleep(0.5)
-dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
-#dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
+duration = end - start
+trigRate = float(numEvents)/duration
 
-print(dpo.query('*OPC?'))
-print("Saved Channel 1 waveform")
-time.sleep(1)
-dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
-#dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
+if not end_early: print "\nRun duration: %0.2f s. Trigger rate: %.2f Hz\n" % (duration,trigRate) 
+else: print "\nRun duration: %0.2f s. Trigger rate: unknown\n" % (duration) 
+if savewaves: 
+	dpo.write(':DISK:SEGMented ALL') ##save all segments (as opposed to just the current segment)
+	print(dpo.query('*OPC?'))
+	print("Ready to save all segments")
+	time.sleep(0.5)
+	dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_%s",BIN,ON'%(runNumber))
+	#dpo.write(':DISK:SAVE:WAVeform CHANnel1 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH1_test_4000events",BIN,ON')
 
-print(dpo.query('*OPC?'))
-print("Saved Channel 2 waveform")
-time.sleep(1)
+	print(dpo.query('*OPC?'))
+	print("Saved Channel 1 waveform")
+	time.sleep(1)
+	dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_%s",BIN,ON'%(runNumber))
+	#dpo.write(':DISK:SAVE:WAVeform CHANnel2 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH2_test_4000events",BIN,ON')
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
-#dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
+	print(dpo.query('*OPC?'))
+	print("Saved Channel 2 waveform")
+	time.sleep(1)
 
-print(dpo.query('*OPC?'))
-print("Saved Channel 3 waveform")
-time.sleep(1)
+	dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_%s",BIN,ON'%(runNumber))
+	#dpo.write(':DISK:SAVE:WAVeform CHANnel3 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH3_test_4000events",BIN,ON')
 
-dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
-#dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')
+	print(dpo.query('*OPC?'))
+	print("Saved Channel 3 waveform")
+	time.sleep(1)
 
-print(dpo.query('*OPC?'))
-print("Saved Channel 4 waveform")
+	dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_%s",BIN,ON'%(runNumber))
+	#dpo.write(':DISK:SAVE:WAVeform CHANnel4 ,"C:\\Users\\Public\\Documents\\AgilentWaveform\\Wavenewscope_CH4_test_4000events",BIN,ON')
 
+	print(dpo.query('*OPC?'))
+	print("Saved Channel 4 waveform")
+else: print "Skipping saving step."
 tmp_file2 = open(run_log_path,"w")
 status = "ready"
 tmp_file2.write(status)
@@ -277,3 +293,5 @@ tmp_file2.close()
 
 
 dpo.close()
+
+
